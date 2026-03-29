@@ -73,7 +73,7 @@ if selected_stock:
                     autosize=True,
                     height=500,
                     margin=dict(l=10, r=10, b=20, t=50), # Kenar boşluklarını daraltarak mobil ekrana sığdırdık
-                    xaxis_rangeslider_visible=False,
+                    xaxis_rangeslider_visible=True, # Slider'ı aktif ettik ki kullanıcı sağa sola kaydırabilsin
                     xaxis_tickformat="%d.%m.%Y",
                     xaxis_tickangle=-90, # Daha sık etiket olacağı için dikey (90 derece) yapmak daha temiz gösterir
                     xaxis_dtick=604800000  # 7 days in milliseconds (Tekrar haftalık gösterim eklendi)
