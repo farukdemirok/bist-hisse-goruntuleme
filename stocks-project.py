@@ -75,7 +75,8 @@ if selected_stock:
                     margin=dict(l=10, r=10, b=20, t=50), # Kenar boşluklarını daraltarak mobil ekrana sığdırdık
                     xaxis_rangeslider_visible=False,
                     xaxis_tickformat="%d.%m.%Y",
-                    xaxis_tickangle=-45 # Telefonda okuması daha kolay olması için 90 yerine 45 derece
+                    xaxis_tickangle=-90, # Daha sık etiket olacağı için dikey (90 derece) yapmak daha temiz gösterir
+                    xaxis_dtick=604800000  # 7 days in milliseconds (Tekrar haftalık gösterim eklendi)
                 )
                 
                 # responsive: True ile her cihaza tam oturmasını sağlıyoruz, mobildeki gereksiz menü barını da gizliyoruz.
