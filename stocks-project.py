@@ -16,32 +16,24 @@ period = "1y"
 
 @st.cache_data(ttl=24*3600) # cache for 1 day
 def load_stock_data(ticker):
-    import time
-    from curl_cffi import requests as curl_requests
-    
-    # Custom session that correctly uses curl_cffi for Yahoo Finance
-    session = curl_requests.Session(impersonate="chrome110")
-    
-    stock = yf.Ticker(ticker, session=session)
+    # Sadece history bilgisini çekiyoruz, .info() kısmı banlanmalara neden oluyor.
+    stock = yf.Ticker(ticker)
     hist = stock.history(period=period)
-    info = stock.info
-    
-    # Adding a very brief sleep delay can sometimes help prevent instant rate-limits on cloud IPs
-    time.sleep(0.5)
-    return hist, info
+    return hist
 
 if selected_stock:
     st.write(f"### **{selected_stock}** için veriler getiriliyor")
     
     with st.spinner('Yahoo Finance üzerinden veriler yükleniyor...'):
         try:
-            hist_data, stock_info = load_stock_data(selected_stock)
+            hist_data = load_stock_data(selected_stock)
             
             if hist_data.empty:
                 st.error("Bu hisse senedi için veri bulunamadı. Borsa kotundan çıkmış veya aktif olmayabilir.")
             else:
-                currency = stock_info.get("currency", "TRY")
-                long_name = stock_info.get("longName", selected_stock)
+                # BIST hisseleri TRY bazındadır. Arama engelini aşmak için info sorgulamasını kaldırdık.
+                currency = "TRY"
+                long_name = selected_stock.replace(".IS", " Hisse Senedi")
                 
                 # Metrics
                 current_price = hist_data['Close'][-1]
