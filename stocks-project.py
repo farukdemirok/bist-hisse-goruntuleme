@@ -5,7 +5,6 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import plotly.graph_objects as go
-import requests
 from config import bist_stocks
 
 st.set_page_config(page_title="BIST Hisse Senedi Görüntüleyici", layout="wide", page_icon="📈")
@@ -17,11 +16,7 @@ period = "1y"
 
 @st.cache_data(ttl=24*3600) # cache for 1 day
 def load_stock_data(ticker):
-    session = requests.Session()
-    session.headers.update({
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
-    })
-    stock = yf.Ticker(ticker, session=session)
+    stock = yf.Ticker(ticker)
     hist = stock.history(period=period)
     info = stock.info
     return hist, info
