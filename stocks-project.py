@@ -69,15 +69,17 @@ if selected_stock:
                 fig.update_layout(
                     title=f"{selected_stock} Geçmiş Fiyatları",
                     yaxis_title=f"Fiyat ({currency})",
-                    xaxis_title="Tarih",
-                    height=600,
+                    xaxis_title="",
+                    autosize=True,
+                    height=500,
+                    margin=dict(l=10, r=10, b=20, t=50), # Kenar boşluklarını daraltarak mobil ekrana sığdırdık
                     xaxis_rangeslider_visible=False,
                     xaxis_tickformat="%d.%m.%Y",
-                    xaxis_tickangle=-90,
-                    xaxis_dtick=604800000  # 7 days in milliseconds
+                    xaxis_tickangle=-45 # Telefonda okuması daha kolay olması için 90 yerine 45 derece
                 )
                 
-                st.plotly_chart(fig, use_container_width=True, config={'locale': 'tr'})
+                # responsive: True ile her cihaza tam oturmasını sağlıyoruz, mobildeki gereksiz menü barını da gizliyoruz.
+                st.plotly_chart(fig, use_container_width=True, config={'locale': 'tr', 'responsive': True, 'displayModeBar': False})
                 
         except Exception as e:
             st.error(f"Veri getirme başarısız oldu: {str(e)}")
