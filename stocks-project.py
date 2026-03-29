@@ -72,15 +72,18 @@ if selected_stock:
                     xaxis_title="",
                     autosize=True,
                     height=500,
-                    margin=dict(l=10, r=10, b=20, t=50), # Kenar boşluklarını daraltarak mobil ekrana sığdırdık
-                    xaxis_rangeslider_visible=False, # Alttaki kalın slider'ı kaldırdık
+                    margin=dict(l=10, r=10, b=20, t=100), # Üst boşluğu (t=100) arttırdık ki butonlar grafiğin veya başlığın üstüne binmesin
+                    xaxis_rangeslider_visible=False,
                     xaxis=dict(
                         tickformat="%d.%m.%Y",
-                        tickangle=-90, # Etiketler dikey
-                        dtick=604800000,  # Haftalık gösterim
-                        # Butonları görünür yapıyoruz
+                        tickangle=-90,
+                        dtick=604800000,
                         rangeselector=dict(
                             visible=True,
+                            x=0, # Butonları tamamen sola hizalar
+                            y=1.1, # Butonları grafiğin DIŞINA (üstüne) taşır
+                            xanchor="left",
+                            yanchor="bottom",
                             buttons=list([
                                 dict(count=1, label="1A", step="month", stepmode="backward"),
                                 dict(count=3, label="3A", step="month", stepmode="backward"),
