@@ -73,10 +73,20 @@ if selected_stock:
                     autosize=True,
                     height=500,
                     margin=dict(l=10, r=10, b=20, t=50), # Kenar boşluklarını daraltarak mobil ekrana sığdırdık
-                    xaxis_rangeslider_visible=True, # Slider'ı aktif ettik ki kullanıcı sağa sola kaydırabilsin
-                    xaxis_tickformat="%d.%m.%Y",
-                    xaxis_tickangle=-90, # Daha sık etiket olacağı için dikey (90 derece) yapmak daha temiz gösterir
-                    xaxis_dtick=604800000  # 7 days in milliseconds (Tekrar haftalık gösterim eklendi)
+                    xaxis_rangeslider_visible=False, # Slider'ı kaldırdık
+                    xaxis=dict(
+                        tickformat="%d.%m.%Y",
+                        tickangle=-90, # Daha sık etiket olacağı için dikey (90 derece) yapmak daha temiz gösterir
+                        dtick=604800000,  # Haftalık gösterim
+                        rangeselector=dict(visible=False), # Alt slider iptal
+                        # "Select, slide and see format" yani butonlu hızlı tarih seçici eklendi
+                        rangeselector_buttons=list([
+                            dict(count=1, label="1A", step="month", stepmode="backward"),
+                            dict(count=3, label="3A", step="month", stepmode="backward"),
+                            dict(count=6, label="6A", step="month", stepmode="backward"),
+                            dict(step="all", label="Tümü (1Y)")
+                        ])
+                    )
                 )
                 
                 # responsive: True ile her cihaza tam oturmasını sağlıyoruz, mobildeki gereksiz menü barını da gizliyoruz.
