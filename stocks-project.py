@@ -80,9 +80,9 @@ if selected_stock:
                         dtick=604800000,
                         rangeselector=dict(
                             visible=True,
-                            x=0, # Butonları tamamen sola hizalar
+                            x=1, # 0 sol, 1 sağ demektir. Sağa hizalıyoruz.
                             y=1.1, # Butonları grafiğin DIŞINA (üstüne) taşır
-                            xanchor="left",
+                            xanchor="right", # Sağdan hizalama çılası
                             yanchor="bottom",
                             buttons=list([
                                 dict(count=1, label="1A", step="month", stepmode="backward"),
