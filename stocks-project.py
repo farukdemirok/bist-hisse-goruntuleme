@@ -16,9 +16,18 @@ period = "1y"
 
 @st.cache_data(ttl=24*3600) # cache for 1 day
 def load_stock_data(ticker):
-    stock = yf.Ticker(ticker)
+    import time
+    from curl_cffi import requests as curl_requests
+    
+    # Custom session that correctly uses curl_cffi for Yahoo Finance
+    session = curl_requests.Session(impersonate="chrome110")
+    
+    stock = yf.Ticker(ticker, session=session)
     hist = stock.history(period=period)
     info = stock.info
+    
+    # Adding a very brief sleep delay can sometimes help prevent instant rate-limits on cloud IPs
+    time.sleep(0.5)
     return hist, info
 
 if selected_stock:
