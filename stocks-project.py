@@ -13,51 +13,74 @@ st.title("📈 BIST Hisse Senedi Görüntüleyici")
 
 @st.cache_data(ttl=7*24*3600) # Haftada bir kez güncelle (çok sık değişmediği için)
 def get_all_bist_tickers():
+    bist_list = []
+    
+    # 1. YÖNTEM: KAP üzerinden güncel hisseleri çekmeyi dene
     try:
         import requests
         import re
-        # KAP (Kamuyu Aydınlatma Platformu) üzerinden güncel hisseleri çekiyoruz
         url = "https://www.kap.org.tr/tr/bist-sirketler"
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        response = requests.get(url, headers=headers)
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        response = requests.get(url, headers=headers, timeout=10)
         
-        # KAP sitesindeki veriler JSON/string içine gömülü olduğundan (Next.js) Regex ile arıyoruz
-        clean_text = response.text.replace('\\\\', '')
-        all_tickers = re.findall(r'\"stockCode\":\"([A-Z0-9, ]+)\"', clean_text)
-                
-        # Temizleme ve .IS ekleme işlemleri (Benzersiz, boş olmayan hisseler)
-        bist_list = []
-        for t in all_tickers:
-            # Virgüle göre ayır (Örn: "ATA, ATAYM" veya "ISATR, ISBTR, ISCTR")
-            for sub_t in str(t).split(','):
-                sub_t = sub_t.strip()
-                if len(sub_t) > 1:
-                    bist_list.append(sub_t + ".IS")
-                    
-        bist_list = list(set(bist_list))
-        
-        # Tümü bulunduysa filtreleyerek döndür
-        if len(bist_list) > 100:
-            import yfinance as yf
-            # Sadece Yahoo'da aktif olarak veri sağlayan (delisted olmayan) hisseleri filtrele
-            try:
-                # Tüm listeyi 1 günlük veri çekerek hızlıca doğrula (~30 sn sürer ancak 7 gün cache'lenir)
-                data = yf.download(bist_list, period="1d", threads=True, progress=False)
-                # Geçerli fiyat kapanışı olan hisselerin sembollerini al
-                valid_tickers = data['Close'].dropna(axis=1, how='all').columns.tolist()
-                
-                if len(valid_tickers) > 100:
-                    return sorted(valid_tickers)
-            except Exception as inner_e:
-                print("YF Download Filter Error:", inner_e)
-                
-            return sorted(bist_list)
+        if response.status_code == 200:
+            clean_text = response.text.replace('\\\\', '')
+            all_tickers = re.findall(r'\"stockCode\":\"([A-Z0-9, ]+)\"', clean_text)
             
+            for t in all_tickers:
+                for sub_t in str(t).split(','):
+                    sub_t = sub_t.strip()
+                    if len(sub_t) > 1:
+                        bist_list.append(sub_t + ".IS")
+            
+            bist_list = list(set(bist_list))
     except Exception as e:
-        print("BIST Tickers Error:", e)
-        pass
-    
-    # Eğer Wikipedia engellenirse veya tablo yapısı değişirse Fallback (Yedek) liste
+        print("KAP Fetch Error:", e)
+
+    # 2. YÖNTEM (YEDEK): KAP engellerse (Streamlit bulut sunucuları yurtdışında olduğu için bazen TR siteleri engeller) Wikipedia'dan çek
+    if len(bist_list) < 100:
+        try:
+            import requests
+            from io import StringIO
+            import pandas as pd
+            url = "https://tr.wikipedia.org/wiki/Borsa_%C4%B0stanbul%27da_i%C5%9Flem_g%C3%B6ren_%C5%9Firketler_listesi"
+            headers = {'User-Agent': 'Mozilla/5.0'}
+            response = requests.get(url, headers=headers, timeout=10)
+            
+            tables = pd.read_html(StringIO(response.text))
+            all_tickers = []
+            for df in tables:
+                if "Kod" in df.columns:
+                    all_tickers.extend(df["Kod"].dropna().astype(str).tolist())
+                elif "Kod[not 1]" in df.columns:
+                    all_tickers.extend(df["Kod[not 1]"].dropna().astype(str).tolist())
+            
+            for t in all_tickers:
+                for sub_t in str(t).split(','):
+                    sub_t = sub_t.strip()
+                    if len(sub_t) > 1:
+                        bist_list.append(sub_t + ".IS")
+            
+            bist_list = list(set(bist_list))
+        except Exception as e:
+            print("Wikipedia Fetch Error:", e)
+
+    # Hisseler başarıyla bulunduysa doğrula
+    if len(bist_list) > 100:
+        import yfinance as yf
+        try:
+            # Sadece Yahoo'da veri sağlayan aktif (delisted olmayan) hisseleri filtrele
+            data = yf.download(bist_list, period="1d", threads=True, progress=False)
+            valid_tickers = data['Close'].dropna(axis=1, how='all').columns.tolist()
+            
+            if len(valid_tickers) > 100:
+                return sorted(valid_tickers)
+        except Exception as inner_e:
+            print("YF Download Filter Error:", inner_e)
+            
+        return sorted(bist_list)
+        
+    # En kötü senaryo: Hem KAP hem Wikipedia çekilemedi (Fallback Liste)
     return [
         "AKBNK.IS", "ARCLK.IS", "ASELS.IS", "BIMAS.IS", "DOHOL.IS", 
         "EKGYO.IS", "EREGL.IS", "FROTO.IS", "GARAN.IS", "GUBRF.IS", 
