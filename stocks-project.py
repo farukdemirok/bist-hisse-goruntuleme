@@ -15,22 +15,15 @@ st.title("📈 BIST Hisse Senedi Görüntüleyici")
 def get_all_bist_tickers():
     try:
         import requests
-        from io import StringIO
-        # Wikipedia'daki güncel BIST şirketleri listesini çekiyoruz
-        url = "https://tr.wikipedia.org/wiki/Borsa_%C4%B0stanbul%27da_i%C5%9Flem_g%C3%B6ren_%C5%9Firketler_listesi"
+        import re
+        # KAP (Kamuyu Aydınlatma Platformu) üzerinden güncel hisseleri çekiyoruz
+        url = "https://www.kap.org.tr/tr/bist-sirketler"
         headers = {'User-Agent': 'Mozilla/5.0'}
         response = requests.get(url, headers=headers)
         
-        # HTML'i okuyoruz
-        tables = pd.read_html(StringIO(response.text))
-        
-        all_tickers = []
-        for df in tables:
-            # Wikipedia'daki tablolarda sütun adı "Kod" veya "Kod[not 1]" olabiliyor. Hepsini topluyoruz.
-            if "Kod" in df.columns:
-                all_tickers.extend(df["Kod"].dropna().astype(str).tolist())
-            elif "Kod[not 1]" in df.columns:
-                all_tickers.extend(df["Kod[not 1]"].dropna().astype(str).tolist())
+        # KAP sitesindeki veriler JSON/string içine gömülü olduğundan (Next.js) Regex ile arıyoruz
+        clean_text = response.text.replace('\\\\', '')
+        all_tickers = re.findall(r'\"stockCode\":\"([A-Z0-9, ]+)\"', clean_text)
                 
         # Temizleme ve .IS ekleme işlemleri (Benzersiz, boş olmayan hisseler)
         bist_list = []
