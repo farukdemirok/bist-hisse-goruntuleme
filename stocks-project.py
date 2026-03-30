@@ -14,17 +14,33 @@ st.title("📈 BIST Hisse Senedi Görüntüleyici")
 @st.cache_data(ttl=7*24*3600) # Haftada bir kez güncelle (çok sık değişmediği için)
 def get_all_bist_tickers():
     try:
+        import requests
+        from io import StringIO
         # Wikipedia'daki güncel BIST şirketleri listesini çekiyoruz
-        url = "https://tr.wikipedia.org/wiki/Borsa_İ%C5%9Ftanbul%27da_i%C5%9Flem_g%C3%B6ren_%C5%9Firketler_listesi"
+        url = "https://tr.wikipedia.org/wiki/Borsa_%C4%B0stanbul%27da_i%C5%9Flem_g%C3%B6ren_%C5%9Firketler_listesi"
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        response = requests.get(url, headers=headers)
         
-        # Pandas ile okumayı deniyoruz, sunucuda kütüphane eksiği olmazsa çalışır
-        tables = pd.read_html(url)
+        # HTML'i okuyoruz
+        tables = pd.read_html(StringIO(response.text))
+        
+        all_tickers = []
         for df in tables:
+            # Wikipedia'daki tablolarda sütun adı "Kod" veya "Kod[not 1]" olabiliyor. Hepsini topluyoruz.
             if "Kod" in df.columns:
-                tickers = df["Kod"].dropna().astype(str).tolist()
-                bist_list = [t.strip() + ".IS" for t in tickers if t.strip()]
-                return sorted(list(set(bist_list)))
-    except Exception:
+                all_tickers.extend(df["Kod"].dropna().astype(str).tolist())
+            elif "Kod[not 1]" in df.columns:
+                all_tickers.extend(df["Kod[not 1]"].dropna().astype(str).tolist())
+                
+        # Temizleme ve .IS ekleme işlemleri (Benzersiz, boş olmayan hisseler)
+        bist_list = [t.strip() + ".IS" for t in all_tickers if len(t.strip()) > 1]
+        
+        # Tümü bulunduysa döndür
+        if len(bist_list) > 100:
+            return sorted(list(set(bist_list)))
+            
+    except Exception as e:
+        print("BIST Tickers Error:", e)
         pass
     
     # Eğer Wikipedia engellenirse veya tablo yapısı değişirse Fallback (Yedek) liste
