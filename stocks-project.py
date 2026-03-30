@@ -33,11 +33,32 @@ def get_all_bist_tickers():
                 all_tickers.extend(df["Kod[not 1]"].dropna().astype(str).tolist())
                 
         # Temizleme ve .IS ekleme işlemleri (Benzersiz, boş olmayan hisseler)
-        bist_list = [t.strip() + ".IS" for t in all_tickers if len(t.strip()) > 1]
+        bist_list = []
+        for t in all_tickers:
+            # Virgüle göre ayır (Örn: "ATA, ATAYM" veya "ISATR, ISBTR, ISCTR")
+            for sub_t in str(t).split(','):
+                sub_t = sub_t.strip()
+                if len(sub_t) > 1:
+                    bist_list.append(sub_t + ".IS")
+                    
+        bist_list = list(set(bist_list))
         
-        # Tümü bulunduysa döndür
+        # Tümü bulunduysa filtreleyerek döndür
         if len(bist_list) > 100:
-            return sorted(list(set(bist_list)))
+            import yfinance as yf
+            # Sadece Yahoo'da aktif olarak veri sağlayan (delisted olmayan) hisseleri filtrele
+            try:
+                # Tüm listeyi 1 günlük veri çekerek hızlıca doğrula (~30 sn sürer ancak 7 gün cache'lenir)
+                data = yf.download(bist_list, period="1d", threads=True, progress=False)
+                # Geçerli fiyat kapanışı olan hisselerin sembollerini al
+                valid_tickers = data['Close'].dropna(axis=1, how='all').columns.tolist()
+                
+                if len(valid_tickers) > 100:
+                    return sorted(valid_tickers)
+            except Exception as inner_e:
+                print("YF Download Filter Error:", inner_e)
+                
+            return sorted(bist_list)
             
     except Exception as e:
         print("BIST Tickers Error:", e)
