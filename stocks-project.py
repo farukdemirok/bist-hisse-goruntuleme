@@ -5,10 +5,41 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import plotly.graph_objects as go
-from config import bist_stocks
+import requests
+from bs4 import BeautifulSoup
 
 st.set_page_config(page_title="BIST Hisse Senedi Görüntüleyici", layout="wide", page_icon="📈")
 st.title("📈 BIST Hisse Senedi Görüntüleyici")
+
+@st.cache_data(ttl=7*24*3600) # Haftada bir kez güncelle (çok sık değişmediği için)
+def get_all_bist_tickers():
+    try:
+        # Wikipedia'daki güncel BIST şirketleri listesini çekiyoruz
+        url = "https://tr.wikipedia.org/wiki/Borsa_İ%C5%9Ftanbul%27da_i%C5%9Flem_g%C3%B6ren_%C5%9Firketler_listesi"
+        
+        # Pandas ile okumayı deniyoruz, sunucuda kütüphane eksiği olmazsa çalışır
+        tables = pd.read_html(url)
+        for df in tables:
+            if "Kod" in df.columns:
+                tickers = df["Kod"].dropna().astype(str).tolist()
+                bist_list = [t.strip() + ".IS" for t in tickers if t.strip()]
+                return sorted(list(set(bist_list)))
+    except Exception:
+        pass
+    
+    # Eğer Wikipedia engellenirse veya tablo yapısı değişirse Fallback (Yedek) liste
+    return [
+        "AKBNK.IS", "ARCLK.IS", "ASELS.IS", "BIMAS.IS", "DOHOL.IS", 
+        "EKGYO.IS", "EREGL.IS", "FROTO.IS", "GARAN.IS", "GUBRF.IS", 
+        "HALKB.IS", "HEKTS.IS", "ISCTR.IS", "KCHOL.IS", "KOZAA.IS", 
+        "KOZAL.IS", "KRDMD.IS", "PETKM.IS", "PGSUS.IS", "SAHOL.IS", 
+        "SASA.IS",  "SISE.IS",  "TAVHL.IS", "TCELL.IS", "THYAO.IS", 
+        "TKFEN.IS", "TOASO.IS", "TTKOM.IS", "TUPRS.IS", "VAKBN.IS", 
+        "YKBNK.IS"
+    ]
+
+# Config dosyasını devre dışı bıraktık, dinamik olarak çekiyoruz:
+bist_stocks = get_all_bist_tickers()
 
 st.sidebar.header("Filtre Seçenekleri")
 selected_stock = st.sidebar.selectbox("Bir BIST Hisse Senedi Seçin", bist_stocks)
