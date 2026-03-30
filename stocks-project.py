@@ -15,55 +15,54 @@ st.title("📈 BIST Hisse Senedi Görüntüleyici")
 def get_all_bist_tickers():
     bist_list = []
     
-    # 1. YÖNTEM: KAP üzerinden güncel hisseleri çekmeyi dene
+    # 1. YÖNTEM: İş Yatırım üzerinden güncel hisseleri çekmeyi dene 
+    # (KAP ve Wikipedia bazen Streamlit sunucularını engelleyebiliyor)
     try:
         import requests
-        import re
-        url = "https://www.kap.org.tr/tr/bist-sirketler"
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        response = requests.get(url, headers=headers, timeout=10)
+        from io import StringIO
+        import pandas as pd
+        url = "https://www.isyatirim.com.tr/tr-tr/analiz/hisse/Sayfalar/Temel-Degerler-Ve-Oranlar.aspx"
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+        response = requests.get(url, headers=headers, timeout=15)
         
         if response.status_code == 200:
-            clean_text = response.text.replace('\\\\', '')
-            all_tickers = re.findall(r'\"stockCode\":\"([A-Z0-9, ]+)\"', clean_text)
+            tables = pd.read_html(StringIO(response.text))
+            all_tickers = []
+            for t in tables:
+                # Tablolardaki "Kod" sütunlarını kontrol edip birleştiriyoruz
+                if "Kod" in t.columns:
+                    all_tickers.extend(t["Kod"].dropna().astype(str).tolist())
             
             for t in all_tickers:
-                for sub_t in str(t).split(','):
-                    sub_t = sub_t.strip()
-                    if len(sub_t) > 1:
-                        bist_list.append(sub_t + ".IS")
-            
+                if len(t.strip()) >= 2:
+                    bist_list.append(t.strip() + ".IS")
+                    
             bist_list = list(set(bist_list))
     except Exception as e:
-        print("KAP Fetch Error:", e)
+        print("Is Yatirim Fetch Error:", e)
 
-    # 2. YÖNTEM (YEDEK): KAP engellerse (Streamlit bulut sunucuları yurtdışında olduğu için bazen TR siteleri engeller) Wikipedia'dan çek
+    # 2. YÖNTEM (YEDEK): KAP üzerinden çekmeyi dene
     if len(bist_list) < 100:
         try:
             import requests
-            from io import StringIO
-            import pandas as pd
-            url = "https://tr.wikipedia.org/wiki/Borsa_%C4%B0stanbul%27da_i%C5%9Flem_g%C3%B6ren_%C5%9Firketler_listesi"
-            headers = {'User-Agent': 'Mozilla/5.0'}
+            import re
+            url = "https://www.kap.org.tr/tr/bist-sirketler"
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
             response = requests.get(url, headers=headers, timeout=10)
             
-            tables = pd.read_html(StringIO(response.text))
-            all_tickers = []
-            for df in tables:
-                if "Kod" in df.columns:
-                    all_tickers.extend(df["Kod"].dropna().astype(str).tolist())
-                elif "Kod[not 1]" in df.columns:
-                    all_tickers.extend(df["Kod[not 1]"].dropna().astype(str).tolist())
-            
-            for t in all_tickers:
-                for sub_t in str(t).split(','):
-                    sub_t = sub_t.strip()
-                    if len(sub_t) > 1:
-                        bist_list.append(sub_t + ".IS")
-            
-            bist_list = list(set(bist_list))
+            if response.status_code == 200:
+                clean_text = response.text.replace('\\\\', '')
+                all_tickers = re.findall(r'\"stockCode\":\"([A-Z0-9, ]+)\"', clean_text)
+                
+                for t in all_tickers:
+                    for sub_t in str(t).split(','):
+                        sub_t = sub_t.strip()
+                        if len(sub_t) > 1:
+                            bist_list.append(sub_t + ".IS")
+                
+                bist_list = list(set(bist_list))
         except Exception as e:
-            print("Wikipedia Fetch Error:", e)
+            print("KAP Fetch Error:", e)
 
     # Hisseler başarıyla bulunduysa doğrula
     if len(bist_list) > 100:
@@ -80,7 +79,7 @@ def get_all_bist_tickers():
             
         return sorted(bist_list)
         
-    # En kötü senaryo: Hem KAP hem Wikipedia çekilemedi (Fallback Liste)
+    # En kötü senaryo: Siteler engellediyse Fallback (Yedek) Liste
     return [
         "AKBNK.IS", "ARCLK.IS", "ASELS.IS", "BIMAS.IS", "DOHOL.IS", 
         "EKGYO.IS", "EREGL.IS", "FROTO.IS", "GARAN.IS", "GUBRF.IS", 
