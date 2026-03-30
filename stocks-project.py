@@ -75,8 +75,10 @@ if selected_stock:
         try:
             hist_data = load_stock_data(selected_stock)
             
-            if hist_data.empty:
-                st.error("Bu hisse senedi için veri bulunamadı. Borsa kotundan çıkmış veya aktif olmayabilir.")
+            # Bazı eski, yayından kaldırılmış (delisted) veya Yahoo'nun henüz veri akışını
+            # sağlamadığı hisselerde dönen hata Rate Limit gibi görünebiliyor ve hist_data.empty geliyor.
+            if hist_data is None or len(hist_data) == 0:
+                st.warning(f"⚠️ **{selected_stock}** için şu an geçmiş veri bulunamadı. Bu hisse senedi borsa kotundan çıkmış, Yahoo Finance sisteminde henüz güncellenmemiş veya tamamen farklı bir isme sahip olabilir.")
             else:
                 # BIST hisseleri TRY bazındadır. Arama engelini aşmak için info sorgulamasını kaldırdık.
                 currency = "TRY"
@@ -145,7 +147,9 @@ if selected_stock:
                 st.plotly_chart(fig, use_container_width=True, config={'locale': 'tr', 'responsive': True, 'displayModeBar': False})
                 
         except Exception as e:
-            st.error(f"Veri getirme başarısız oldu: {str(e)}")
+            # Gelen hata sadece Too Many Requests hatası olabilir ve aslında Yahoo o hisseyi bulamayınca da aynı hatayı zoraki yansıtıyor.
+            # O yüzden hatayı ezip temiz uyarı çıkarıyoruz.
+            st.warning(f"⚠️ **{selected_stock}** güncel verilerine ulaşılamadı. Sembol Yahoo Finance'te aktif olmayabilir (" + str(e).split()[0] + ")")
 
 st.sidebar.markdown("---")
 st.sidebar.info("Veriler yfinance tarafından sağlanmaktadır. Son 1 yıllık geçmiş veriler günlük olarak yenilenir.")
